@@ -2,8 +2,8 @@ Param(
     [parameter(Mandatory=$true)][string]$resourceGroup,
     [parameter(Mandatory=$true)][string]$location,
     [parameter(Mandatory=$false)][string]$subscription="",
-    [parameter(Mandatory=$true)][string]$clientId,
-    [parameter(Mandatory=$true)][string]$password,
+    # [parameter(Mandatory=$true)][string]$clientId,
+    # [parameter(Mandatory=$true)][string]$password,
     [parameter(Mandatory=$false)][string]$spObjectId,
     [parameter(Mandatory=$false)][string]$tag="latest",
     [parameter(Mandatory=$false)][bool]$deployGlobalSecret=$false
@@ -50,8 +50,8 @@ if ($deployGlobalSecret) {
 }
 
 # Set up Dev Spaces
-Write-Host "Setting up Azure Dev Spaces for AKS: $aksName"
-& ./Setup-Dev-Spaces.ps1 -resourceGroup $resourceGroup -aksName $aksName -rootSpace default
+# Write-Host "Setting up Azure Dev Spaces for AKS: $aksName"
+# & ./Setup-Dev-Spaces.ps1 -resourceGroup $resourceGroup -aksName $aksName -rootSpace default
 
 # Deploy Azure function in order to have its key on helm values.
 $funcapp=$(az functionapp list -g $resourceGroup --query "[0]" -o json | ConvertFrom-Json)
