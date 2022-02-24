@@ -1,0 +1,64 @@
+on: [push]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    
+    - uses: actions/checkout@master
+    
+    - uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Create ACR
+      id: create-acr
+      run: |
+        az acr create -n ghtest -g ghtesta05c-rg --location "East US 2" --sku Standard --admin-enabled
+        echo "::set-output name=acr_username::`az acr credential show -n ghtest --query username | xargs`"
+        echo "::set-output name=acr_password::`az acr credential show -n ghtest --query passwords[0].value | xargs`"
+        echo "::add-mask::`az acr credential show -n ghtest --query passwords[0].value | xargs`"
+
+    - uses: azure/docker-login@v1
+      with:
+        login-server: ghtest.azurecr.io
+        username: ${{ steps.create-acr.outputs.acr_username }}
+        password: ${{ steps.create-acr.outputs.acr_password }}
+
+    - name: Build and push image to ACR
+      id: build-image
+      run: |
+        docker build "$GITHUB_WORKSPACE/Source/Services/RPSLS.DotNetPlayer.Api" -f  "Source/Services/RPSLS.DotNetPlayer.Api/Dockerfile" -t ghtest.azurecr.io/rpslsaksflkep55wwjcdi:${{ github.sha }} --label dockerfile-path=Source/Services/RPSLS.DotNetPlayer.Api/Dockerfile
+        docker push ghtest.azurecr.io/rpslsaksflkep55wwjcdi:${{ github.sha }}
+    
+    - uses: azure/k8s-set-context@v1
+      id: login
+      with:
+         kubeconfig: ${{ secrets.aks_rpslsaksflkep55wwjcdi_kubeConfig }}
+    
+    - name: Create namespace
+      run: |
+        namespacePresent=`kubectl get namespace | grep rpslsaksflkep55wwjcdia855 | wc -l`
+        if [ $namespacePresent -eq 0 ]
+        then
+            echo `kubectl create namespace rpslsaksflkep55wwjcdia855`
+        fi
+
+    - uses: azure/k8s-create-secret@v1
+      with:
+        namespace: rpslsaksflkep55wwjcdia855
+        container-registry-url: ghtest.azurecr.io
+        container-registry-username: ${{ steps.create-acr.outputs.acr_username }}
+        container-registry-password: ${{ steps.create-acr.outputs.acr_password }}
+        secret-name: rpslsaksflkedockerauth
+       
+    - uses: azure/k8s-deploy@v1.2
+      with:
+        namespace: rpslsaksflkep55wwjcdia855
+        manifests: |
+          manifests/deployment.yml
+          manifests/service.yml
+          manifests/ingress.yml
+        images: |
+          ghtest.azurecr.io/rpslsaksflkep55wwjcdi:${{ github.sha }}
+        imagepullsecrets: |
+          rpslsaksflkedockerauth   
