@@ -140,7 +140,7 @@ Write-Host "Function App will be deployed under a Service Plan of type $funcSvcP
 Push-Location $($MyInvocation.InvocationName | Split-Path)
 Push-Location $sourceFolder
 Write-Host "Begining the ARM deployment..." -ForegroundColor Yellow
-az group deployment create -g $resourceGroup --template-file $script --parameters servicePrincipalId=$clientId --parameters servicePrincipalSecret=$password --parameters aksVersion=$aksVersion --parameters kv_objectId=$objectId --parameters funcAppSkuName=$funcSvcPlan --parameters funcAppSkuTier=$funcSvcPlanTier
+az deployment group create -g $resourceGroup --template-file $script --parameters servicePrincipalId=$clientId --parameters servicePrincipalSecret=$password --parameters aksVersion=$aksVersion --parameters kv_objectId=$objectId --parameters funcAppSkuName=$funcSvcPlan --parameters funcAppSkuTier=$funcSvcPlanTier
 $armExitCode=$LastExitCode
 
 Pop-Location
